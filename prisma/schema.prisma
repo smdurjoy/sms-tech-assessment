@@ -6,3 +6,116 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum EnrolmentStatus {
+  ENROLLED
+  DEFERRED
+  WITHDRAWN
+  COMPLETED
+}
+
+/// Controlled reference data maintained by the Registry. A student is enrolled
+/// *onto* a programme; the fee derives from here but is snapshotted per student.
+model Programme {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String   @unique
+  feeAmount Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  students Student[]
+}
+
+/// The authoritative student record.
+model Student {
+  id              String          @id @default(cuid())
+  studentId       String          @unique // human-readable matric no. e.g. SMS-2025-0001
+  fullName        String
+  email           String          @unique
+  dateOfBirth     DateTime        @db.Date
+  programmeId     String
+  programme       Programme       @relation(fields: [programmeId], references: [id])
+  academicYear    String // UK convention, e.g. "2025/26"
+  enrolmentStatus EnrolmentStatus @default(ENROLLED)
+  feeAmount       Decimal         @db.Decimal(10, 2) // snapshot of programme fee at enrolment
+  feeDueDate      DateTime // drives the overdue flag (overdue = balance > 0 AND past this date)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  payments    Payment[]
+  submissions Submission[]
+  results     Result[]
+
+  @@index([programmeId])
+  @@index([enrolmentStatus])
+}
+
+/// Immutable ledger of payment transactions. Outstanding balance is derived
+/// from these, never stored, so it is always correct in real time.
+model Payment {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  amount          Decimal  @db.Decimal(10, 2)
+  paidAt          DateTime
+  referenceNumber String   @unique // Registries reconcile by reference
+  createdAt       DateTime @default(now())
+
+  @@index([studentId])
+}
+
+model Assessment {
+  id        String   @id @default(cuid())
+  title     String
+  module    String
+  deadline  DateTime
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  submissions Submission[]
+  results     Result[]
+}
+
+/// One submission per student per assessment (enforced by unique constraint).
+/// isLate is derived (submittedAt > assessment.deadline), not stored.
+model Submission {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  fileName     String
+  storagePath  String
+  mimeType     String
+  fileSize     Int
+  submittedAt  DateTime   @default(now())
+
+  @@unique([assessmentId, studentId])
+  @@index([studentId])
+}
+
+/// Grade is confidential until published. Classification is derived from grade.
+model Result {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  grade        Int // 0..100, validated in the service layer
+  published    Boolean    @default(false)
+  gradedAt     DateTime   @default(now())
+  gradedBy     String
+  publishedAt  DateTime?
+
+  @@unique([assessmentId, studentId])
+  @@index([studentId])
+}
+
+/// Per-year counter used to allocate Student IDs atomically (no collisions
+/// under concurrent enrolments). Incremented inside a transaction.
+model StudentSequence {
+  year    Int @id
+  lastSeq Int @default(0)
+}
