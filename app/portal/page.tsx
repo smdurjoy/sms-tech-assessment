@@ -3,10 +3,12 @@ import { GraduationCap } from "lucide-react";
 
 import { getCurrentStudentId, getRole } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import { summariseFees } from "@/lib/domain/fees";
+import { isLate, isPastDeadline } from "@/lib/domain/late";
 import { RoleSwitcher } from "@/components/app/role-switcher";
 import { StatusBadge } from "@/components/students/status-badge";
+import { PortalAssessments } from "@/components/assessments/portal-assessments";
 import {
   BalanceAmount,
   OverdueBadge,
@@ -71,6 +73,40 @@ export default async function PortalPage() {
         }))
       )
     : null;
+
+  // Assessments the student can submit against. We load every assessment plus
+  // only this student's own submissions, then derive on-time/late per row — no
+  // other student's work is ever queried, so the portal can't leak it.
+  const now = new Date();
+  const [assessments, mySubmissions] = student
+    ? await Promise.all([
+        prisma.assessment.findMany({ orderBy: { deadline: "asc" } }),
+        prisma.submission.findMany({
+          where: { studentId: student.id },
+          select: { id: true, assessmentId: true, submittedAt: true },
+        }),
+      ])
+    : [[], []];
+  const submissionByAssessment = new Map(
+    mySubmissions.map((s) => [s.assessmentId, s])
+  );
+  const assessmentRows = assessments.map((a) => {
+    const sub = submissionByAssessment.get(a.id);
+    return {
+      id: a.id,
+      title: a.title,
+      module: a.module,
+      deadlineLabel: formatDateTime(a.deadline),
+      pastDeadline: isPastDeadline(a.deadline, now),
+      submission: sub
+        ? {
+            id: sub.id,
+            submittedAtLabel: formatDateTime(sub.submittedAt),
+            late: isLate(sub.submittedAt, a.deadline),
+          }
+        : null,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -204,6 +240,8 @@ export default async function PortalPage() {
                 </Table>
               </div>
             </div>
+
+            <PortalAssessments assessments={assessmentRows} />
           </div>
         )}
       </main>

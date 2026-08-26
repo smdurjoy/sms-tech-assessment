@@ -16,6 +16,11 @@
 # production
 /build
 
+# uploaded submission files (served only via the guarded download route).
+# Keep the folder in the repo, ignore the student files inside it.
+/uploads/*
+!/uploads/.gitkeep
+
 # misc
 .DS_Store
 *.pem

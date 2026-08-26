@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, GraduationCap, LayoutDashboard, Users } from "lucide-react";
+import {
+  Building2,
+  ClipboardList,
+  GraduationCap,
+  LayoutDashboard,
+  Users,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,6 +16,7 @@ const NAV = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/students", label: "Students", icon: Users, exact: false },
   { href: "/programmes", label: "Programmes", icon: Building2, exact: false },
+  { href: "/assessments", label: "Assessments", icon: ClipboardList, exact: false },
 ];
 
 export function Sidebar() {
