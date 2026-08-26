@@ -80,7 +80,8 @@ export function ProgrammesClient({ programmes }: { programmes: ProgrammeRow[] })
             <TableRow>
               <TableHead>Code</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead className="text-right">Annual fee</TableHead>
+              <TableHead className="text-right">Total fee</TableHead>
+              <TableHead className="text-right">Semesters</TableHead>
               <TableHead className="text-right">Students</TableHead>
               <TableHead className="w-10" />
             </TableRow>
@@ -89,7 +90,7 @@ export function ProgrammesClient({ programmes }: { programmes: ProgrammeRow[] })
             {programmes.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No programmes yet. Create your first programme to enrol
@@ -103,6 +104,9 @@ export function ProgrammesClient({ programmes }: { programmes: ProgrammeRow[] })
                   <TableCell className="font-medium">{programme.name}</TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatMoney(programme.feeAmount)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {programme.durationSemesters}
                   </TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">
                     {programme.studentCount}

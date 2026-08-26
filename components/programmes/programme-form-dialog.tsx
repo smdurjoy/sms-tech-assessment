@@ -8,6 +8,8 @@ import {
   createProgramme,
   updateProgramme,
 } from "@/app/(staff)/programmes/actions";
+import { buildFeeSchedule } from "@/lib/services/fee-schedule";
+import { formatMoney } from "@/lib/format";
 import type { FieldErrors } from "@/lib/action-result";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +28,7 @@ export type ProgrammeRow = {
   code: string;
   name: string;
   feeAmount: number;
+  durationSemesters: number;
   studentCount: number;
 };
 
@@ -50,14 +53,35 @@ export function ProgrammeFormDialog({
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [feeAmount, setFeeAmount] = useState("");
+  const [durationSemesters, setDurationSemesters] = useState("");
 
   const isEdit = Boolean(programme);
+
+  // Preview the equal split so staff see how the total is billed per semester.
+  const splitHint = (() => {
+    const fee = Number(feeAmount);
+    const n = Number(durationSemesters);
+    if (!Number.isFinite(fee) || fee <= 0 || !Number.isInteger(n) || n < 1) {
+      return null;
+    }
+    const schedule = buildFeeSchedule({
+      totalFee: fee,
+      semesters: n,
+      firstDueDate: new Date(),
+    });
+    const first = schedule[0].amount;
+    const last = schedule[schedule.length - 1].amount;
+    return first === last
+      ? `${n} semester${n === 1 ? "" : "s"} of ${formatMoney(first)}`
+      : `${n - 1} × ${formatMoney(first)} + ${formatMoney(last)} on the last semester`;
+  })();
 
   useEffect(() => {
     if (open) {
       setCode(programme?.code ?? "");
       setName(programme?.name ?? "");
       setFeeAmount(programme ? String(programme.feeAmount) : "");
+      setDurationSemesters(programme ? String(programme.durationSemesters) : "");
       setErrors({});
     }
   }, [open, programme]);
@@ -68,6 +92,7 @@ export function ProgrammeFormDialog({
     formData.set("code", code);
     formData.set("name", name);
     formData.set("feeAmount", feeAmount);
+    formData.set("durationSemesters", durationSemesters);
 
     startTransition(async () => {
       const result = isEdit
@@ -123,20 +148,40 @@ export function ProgrammeFormDialog({
             <FieldError message={errors.name} />
           </div>
 
-          <div className="grid gap-1.5">
-            <Label htmlFor="feeAmount">Annual fee (£)</Label>
-            <Input
-              id="feeAmount"
-              type="number"
-              min="0"
-              step="0.01"
-              value={feeAmount}
-              onChange={(e) => setFeeAmount(e.target.value)}
-              placeholder="9250"
-              aria-invalid={Boolean(errors.feeAmount)}
-            />
-            <FieldError message={errors.feeAmount} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="feeAmount">Total programme fee (£)</Label>
+              <Input
+                id="feeAmount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={feeAmount}
+                onChange={(e) => setFeeAmount(e.target.value)}
+                placeholder="27750"
+                aria-invalid={Boolean(errors.feeAmount)}
+              />
+              <FieldError message={errors.feeAmount} />
+            </div>
+
+            <div className="grid gap-1.5">
+              <Label htmlFor="durationSemesters">Semesters</Label>
+              <Input
+                id="durationSemesters"
+                type="number"
+                min="1"
+                step="1"
+                value={durationSemesters}
+                onChange={(e) => setDurationSemesters(e.target.value)}
+                placeholder="6"
+                aria-invalid={Boolean(errors.durationSemesters)}
+              />
+              <FieldError message={errors.durationSemesters} />
+            </div>
           </div>
+          {splitHint ? (
+            <p className="-mt-1 text-xs text-muted-foreground">{splitHint}</p>
+          ) : null}
         </form>
 
         <DialogFooter>

@@ -13,6 +13,7 @@ export default async function ProgrammesPage() {
     code: programme.code,
     name: programme.name,
     feeAmount: Number(programme.feeAmount),
+    durationSemesters: programme.durationSemesters,
     studentCount: programme._count.students,
   }));
 

@@ -19,6 +19,11 @@ export const programmeSchema = z.object({
     .positive("Fee must be greater than 0")
     .max(1_000_000, "Fee looks too large")
     .transform(round2),
+  durationSemesters: z.coerce
+    .number({ error: "Enter the number of semesters" })
+    .int("Semesters must be a whole number")
+    .min(1, "There must be at least 1 semester")
+    .max(16, "That's more semesters than any programme runs"),
 });
 
 export type ProgrammeInput = z.infer<typeof programmeSchema>;

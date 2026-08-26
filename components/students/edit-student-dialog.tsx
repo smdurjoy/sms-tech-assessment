@@ -34,7 +34,6 @@ type StudentForEdit = {
   email: string;
   academicYear: string;
   enrolmentStatus: string;
-  feeDueDate: string; // yyyy-mm-dd
 };
 
 function FieldError({ message }: { message?: string }) {
@@ -52,7 +51,6 @@ export function EditStudentDialog({ student }: { student: StudentForEdit }) {
   const [email, setEmail] = useState(student.email);
   const [academicYear, setAcademicYear] = useState(student.academicYear);
   const [status, setStatus] = useState(student.enrolmentStatus);
-  const [feeDueDate, setFeeDueDate] = useState(student.feeDueDate);
 
   useEffect(() => {
     if (open) {
@@ -60,7 +58,6 @@ export function EditStudentDialog({ student }: { student: StudentForEdit }) {
       setEmail(student.email);
       setAcademicYear(student.academicYear);
       setStatus(student.enrolmentStatus);
-      setFeeDueDate(student.feeDueDate);
       setErrors({});
     }
   }, [open, student]);
@@ -72,7 +69,6 @@ export function EditStudentDialog({ student }: { student: StudentForEdit }) {
     formData.set("email", email);
     formData.set("academicYear", academicYear);
     formData.set("enrolmentStatus", status);
-    formData.set("feeDueDate", feeDueDate);
 
     startTransition(async () => {
       const result = await updateStudent(student.id, formData);
@@ -155,18 +151,6 @@ export function EditStudentDialog({ student }: { student: StudentForEdit }) {
               />
               <FieldError message={errors.academicYear} />
             </div>
-          </div>
-
-          <div className="grid gap-1.5">
-            <Label htmlFor="edit-feeDueDate">Fee due date</Label>
-            <Input
-              id="edit-feeDueDate"
-              type="date"
-              value={feeDueDate}
-              onChange={(e) => setFeeDueDate(e.target.value)}
-              aria-invalid={Boolean(errors.feeDueDate)}
-            />
-            <FieldError message={errors.feeDueDate} />
           </div>
         </form>
 

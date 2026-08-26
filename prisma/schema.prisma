@@ -17,12 +17,13 @@ enum EnrolmentStatus {
 /// Controlled reference data maintained by the Registry. A student is enrolled
 /// *onto* a programme; the fee derives from here but is snapshotted per student.
 model Programme {
-  id        String   @id @default(cuid())
-  code      String   @unique
-  name      String   @unique
-  feeAmount Decimal  @db.Decimal(10, 2)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  code              String   @unique
+  name              String   @unique
+  feeAmount         Decimal  @db.Decimal(10, 2) // total programme fee, split into installments
+  durationSemesters Int // number of semesters the fee is billed over
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   students Student[]
 }
@@ -38,31 +39,55 @@ model Student {
   programme       Programme       @relation(fields: [programmeId], references: [id])
   academicYear    String // UK convention, e.g. "2025/26"
   enrolmentStatus EnrolmentStatus @default(ENROLLED)
-  feeAmount       Decimal         @db.Decimal(10, 2) // snapshot of programme fee at enrolment
-  feeDueDate      DateTime // drives the overdue flag (overdue = balance > 0 AND past this date)
+  feeAmount       Decimal         @db.Decimal(10, 2) // total snapshot at enrolment (= Σ installments)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  payments    Payment[]
-  submissions Submission[]
-  results     Result[]
+  installments FeeInstallment[]
+  payments     Payment[]
+  submissions  Submission[]
+  results      Result[]
 
   @@index([programmeId])
   @@index([enrolmentStatus])
 }
 
-/// Immutable ledger of payment transactions. Outstanding balance is derived
-/// from these, never stored, so it is always correct in real time.
+/// One billing installment per semester, snapshotted from the programme fee at
+/// enrolment so later programme changes never re-bill an existing student. The
+/// balance and overdue flag are derived per installment, never stored.
+model FeeInstallment {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sequence  Int // 1..N
+  amount    Decimal  @db.Decimal(10, 2)
+  dueDate   DateTime
+  createdAt DateTime @default(now())
+
+  payments Payment[]
+
+  @@unique([studentId, sequence])
+  @@index([studentId])
+  @@index([dueDate])
+}
+
+/// Immutable ledger of payment transactions. Recorded against a specific
+/// semester installment; studentId is kept denormalised so per-student
+/// aggregates stay simple. Outstanding balance is derived from these, never
+/// stored, so it is always correct in real time.
 model Payment {
-  id              String   @id @default(cuid())
+  id              String         @id @default(cuid())
   studentId       String
-  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  amount          Decimal  @db.Decimal(10, 2)
+  student         Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  installmentId   String
+  installment     FeeInstallment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+  amount          Decimal        @db.Decimal(10, 2)
   paidAt          DateTime
-  referenceNumber String   @unique // Registries reconcile by reference
-  createdAt       DateTime @default(now())
+  referenceNumber String         @unique // Registries reconcile by reference
+  createdAt       DateTime       @default(now())
 
   @@index([studentId])
+  @@index([installmentId])
 }
 
 model Assessment {

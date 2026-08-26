@@ -16,7 +16,7 @@ function currentAcademicYear(date = new Date()): string {
   return `${startYear}/${end}`;
 }
 
-function defaultFeeDueDate(): string {
+function defaultFirstDueDate(): string {
   const due = new Date();
   due.setDate(due.getDate() + 30);
   return toDateInputValue(due);
@@ -25,7 +25,13 @@ function defaultFeeDueDate(): string {
 export default async function NewStudentPage() {
   const programmes = await prisma.programme.findMany({
     orderBy: { name: "asc" },
-    select: { id: true, code: true, name: true, feeAmount: true },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      feeAmount: true,
+      durationSemesters: true,
+    },
   });
 
   const options = programmes.map((programme) => ({
@@ -33,6 +39,7 @@ export default async function NewStudentPage() {
     code: programme.code,
     name: programme.name,
     feeAmount: Number(programme.feeAmount),
+    durationSemesters: programme.durationSemesters,
   }));
 
   return (
@@ -64,7 +71,7 @@ export default async function NewStudentPage() {
         <EnrolStudentForm
           programmes={options}
           defaultAcademicYear={currentAcademicYear()}
-          defaultFeeDueDate={defaultFeeDueDate()}
+          defaultFirstDueDate={defaultFirstDueDate()}
         />
       )}
     </>

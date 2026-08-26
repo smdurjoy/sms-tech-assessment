@@ -40,7 +40,7 @@ export const enrolStudentSchema = z.object({
     .trim()
     .regex(ACADEMIC_YEAR_RE, "Use the format 2025/26"),
   enrolmentStatus: z.enum(ENROLMENT_STATUS_VALUES),
-  feeDueDate: z.coerce.date({ error: "Enter a fee due date" }),
+  firstDueDate: z.coerce.date({ error: "Enter the first semester's due date" }),
 });
 
 export const updateStudentSchema = enrolStudentSchema.pick({
@@ -48,7 +48,6 @@ export const updateStudentSchema = enrolStudentSchema.pick({
   email: true,
   academicYear: true,
   enrolmentStatus: true,
-  feeDueDate: true,
 });
 
 export type EnrolStudentInput = z.infer<typeof enrolStudentSchema>;

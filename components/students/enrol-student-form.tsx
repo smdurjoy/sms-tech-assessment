@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { enrolStudent } from "@/app/(staff)/students/actions";
 import { ENROLMENT_STATUS_OPTIONS } from "@/lib/validation/student";
+import { buildFeeSchedule } from "@/lib/services/fee-schedule";
 import { formatMoney } from "@/lib/format";
 import type { FieldErrors } from "@/lib/action-result";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ type ProgrammeOption = {
   code: string;
   name: string;
   feeAmount: number;
+  durationSemesters: number;
 };
 
 function FieldError({ message }: { message?: string }) {
@@ -35,11 +37,11 @@ function FieldError({ message }: { message?: string }) {
 export function EnrolStudentForm({
   programmes,
   defaultAcademicYear,
-  defaultFeeDueDate,
+  defaultFirstDueDate,
 }: {
   programmes: ProgrammeOption[];
   defaultAcademicYear: string;
-  defaultFeeDueDate: string;
+  defaultFirstDueDate: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -49,6 +51,23 @@ export function EnrolStudentForm({
   const [status, setStatus] = useState("ENROLLED");
 
   const selectedProgramme = programmes.find((p) => p.id === programmeId);
+  const splitHint = selectedProgramme
+    ? (() => {
+        const schedule = buildFeeSchedule({
+          totalFee: selectedProgramme.feeAmount,
+          semesters: selectedProgramme.durationSemesters,
+          firstDueDate: new Date(),
+        });
+        const first = schedule[0].amount;
+        const last = schedule[schedule.length - 1].amount;
+        const n = selectedProgramme.durationSemesters;
+        const split =
+          first === last
+            ? `${n} × ${formatMoney(first)}`
+            : `${n - 1} × ${formatMoney(first)} + ${formatMoney(last)}`;
+        return `${formatMoney(selectedProgramme.feeAmount)} total → ${split}`;
+      })()
+    : null;
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -124,8 +143,8 @@ export function EnrolStudentForm({
           <FieldError message={errors.programmeId} />
           {selectedProgramme ? (
             <p className="text-xs text-muted-foreground">
-              Fee {formatMoney(selectedProgramme.feeAmount)} — snapshotted at
-              enrolment; later fee changes won&apos;t re-bill this student.
+              {splitHint} — snapshotted at enrolment; later fee changes
+              won&apos;t re-bill this student.
             </p>
           ) : null}
         </div>
@@ -160,15 +179,18 @@ export function EnrolStudentForm({
         </div>
 
         <div className="grid gap-1.5">
-          <Label htmlFor="feeDueDate">Fee due date</Label>
+          <Label htmlFor="firstDueDate">First semester due date</Label>
           <Input
-            id="feeDueDate"
-            name="feeDueDate"
+            id="firstDueDate"
+            name="firstDueDate"
             type="date"
-            defaultValue={defaultFeeDueDate}
-            aria-invalid={Boolean(errors.feeDueDate)}
+            defaultValue={defaultFirstDueDate}
+            aria-invalid={Boolean(errors.firstDueDate)}
           />
-          <FieldError message={errors.feeDueDate} />
+          <FieldError message={errors.firstDueDate} />
+          <p className="text-xs text-muted-foreground">
+            Later semesters fall due every 4 months after this date.
+          </p>
         </div>
       </div>
 
