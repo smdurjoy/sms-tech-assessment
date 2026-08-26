@@ -10,6 +10,10 @@ import { RoleSwitcher } from "@/components/app/role-switcher";
 import { StatusBadge } from "@/components/students/status-badge";
 import { PortalAssessments } from "@/components/assessments/portal-assessments";
 import {
+  PortalResults,
+  type PortalResultRow,
+} from "@/components/assessments/portal-results";
+import {
   BalanceAmount,
   OverdueBadge,
   SemesterStatusBadge,
@@ -78,15 +82,27 @@ export default async function PortalPage() {
   // only this student's own submissions, then derive on-time/late per row — no
   // other student's work is ever queried, so the portal can't leak it.
   const now = new Date();
-  const [assessments, mySubmissions] = student
+  const [assessments, mySubmissions, publishedResults] = student
     ? await Promise.all([
         prisma.assessment.findMany({ orderBy: { deadline: "asc" } }),
         prisma.submission.findMany({
           where: { studentId: student.id },
           select: { id: true, assessmentId: true, submittedAt: true },
         }),
+        // Confidentiality is enforced here, in the query: only *published*
+        // results for this student are ever loaded, so a withheld grade can't
+        // leak even via a direct fetch — it's never read in the first place.
+        prisma.result.findMany({
+          where: { studentId: student.id, published: true },
+          orderBy: { gradedAt: "desc" },
+          select: {
+            id: true,
+            grade: true,
+            assessment: { select: { title: true, module: true } },
+          },
+        }),
       ])
-    : [[], []];
+    : [[], [], []];
   const submissionByAssessment = new Map(
     mySubmissions.map((s) => [s.assessmentId, s])
   );
@@ -107,6 +123,13 @@ export default async function PortalPage() {
         : null,
     };
   });
+
+  const resultRows: PortalResultRow[] = publishedResults.map((r) => ({
+    id: r.id,
+    title: r.assessment.title,
+    module: r.assessment.module,
+    grade: r.grade,
+  }));
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -242,6 +265,8 @@ export default async function PortalPage() {
             </div>
 
             <PortalAssessments assessments={assessmentRows} />
+
+            <PortalResults results={resultRows} />
           </div>
         )}
       </main>
