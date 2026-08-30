@@ -21,6 +21,14 @@ export async function createAssessment(
     return { ok: false, fieldErrors: toFieldErrors(parsed.error) };
   }
 
+  const programme = await prisma.programme.findUnique({
+    where: { id: parsed.data.programmeId },
+    select: { id: true },
+  });
+  if (!programme) {
+    return { ok: false, fieldErrors: { programmeId: "Select a valid programme" } };
+  }
+
   let id: string;
   try {
     const created = await prisma.assessment.create({
@@ -47,6 +55,14 @@ export async function updateAssessment(
   const parsed = assessmentSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { ok: false, fieldErrors: toFieldErrors(parsed.error) };
+  }
+
+  const programme = await prisma.programme.findUnique({
+    where: { id: parsed.data.programmeId },
+    select: { id: true },
+  });
+  if (!programme) {
+    return { ok: false, fieldErrors: { programmeId: "Select a valid programme" } };
   }
 
   try {
@@ -123,15 +139,16 @@ export async function gradeStudent(
   const { grade } = parsed.data;
 
   // The result must attach to a real assessment and a gradable student. A
-  // withdrawn student has left the register, so is not graded.
+  // withdrawn student has left the register, so is not graded. The student must
+  // also be on the assessment's programme — assessments are cohort-scoped.
   const [assessment, student] = await Promise.all([
     prisma.assessment.findUnique({
       where: { id: assessmentId },
-      select: { id: true },
+      select: { id: true, programmeId: true },
     }),
     prisma.student.findUnique({
       where: { id: studentId },
-      select: { enrolmentStatus: true },
+      select: { enrolmentStatus: true, programmeId: true },
     }),
   ]);
   if (!assessment) {
@@ -142,6 +159,12 @@ export async function gradeStudent(
   }
   if (student.enrolmentStatus === "WITHDRAWN") {
     return { ok: false, formError: "A withdrawn student can't be graded." };
+  }
+  if (student.programmeId !== assessment.programmeId) {
+    return {
+      ok: false,
+      formError: "This student isn't on the assessment's programme.",
+    };
   }
 
   try {

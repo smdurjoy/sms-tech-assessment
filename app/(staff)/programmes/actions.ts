@@ -76,14 +76,27 @@ export async function deleteProgramme(id: string): Promise<ActionResult> {
   requireStaff();
 
   // Reference data in use must not be deleted — it would orphan student records
-  // and drop the fee basis. Registries retire programmes, they don't erase them.
-  const enrolled = await prisma.student.count({ where: { programmeId: id } });
-  if (enrolled > 0) {
+  // and drop the fee basis, or strand assessments that hold academic evidence.
+  // Registries retire programmes, they don't erase them.
+  const [enrolled, assessments] = await Promise.all([
+    prisma.student.count({ where: { programmeId: id } }),
+    prisma.assessment.count({ where: { programmeId: id } }),
+  ]);
+  if (enrolled > 0 || assessments > 0) {
+    const parts: string[] = [];
+    if (enrolled > 0) {
+      parts.push(
+        `${enrolled} student${enrolled === 1 ? " is" : "s are"} enrolled`
+      );
+    }
+    if (assessments > 0) {
+      parts.push(
+        `${assessments} assessment${assessments === 1 ? " is" : "s are"} set`
+      );
+    }
     return {
       ok: false,
-      formError: `Cannot delete: ${enrolled} student${
-        enrolled === 1 ? " is" : "s are"
-      } enrolled on this programme.`,
+      formError: `Cannot delete: ${parts.join(" and ")} on this programme.`,
     };
   }
 

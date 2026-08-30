@@ -150,7 +150,7 @@ export function ProgrammeFormDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-1.5">
-              <Label htmlFor="feeAmount">Total programme fee (£)</Label>
+              <Label htmlFor="feeAmount">Total programme fee (৳)</Label>
               <Input
                 id="feeAmount"
                 type="number"

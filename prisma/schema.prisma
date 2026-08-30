@@ -25,7 +25,8 @@ model Programme {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  students Student[]
+  students    Student[]
+  assessments Assessment[]
 }
 
 /// The authoritative student record.
@@ -91,16 +92,20 @@ model Payment {
 }
 
 model Assessment {
-  id        String   @id @default(cuid())
-  title     String
-  module    String
-  deadline  DateTime
-  createdBy String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(cuid())
+  title       String
+  module      String
+  deadline    DateTime
+  programmeId String
+  programme   Programme @relation(fields: [programmeId], references: [id])
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   submissions Submission[]
   results     Result[]
+
+  @@index([programmeId])
 }
 
 /// One submission per student per assessment (enforced by unique constraint).

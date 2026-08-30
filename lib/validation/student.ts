@@ -26,7 +26,7 @@ const dateOfBirth = z.coerce
     "Date of birth looks too far in the past"
   );
 
-export const enrolStudentSchema = z.object({
+const studentFields = z.object({
   fullName: z
     .string()
     .trim()
@@ -43,7 +43,11 @@ export const enrolStudentSchema = z.object({
   firstDueDate: z.coerce.date({ error: "Enter the first semester's due date" }),
 });
 
-export const updateStudentSchema = enrolStudentSchema.pick({
+// New students are always ENROLLED — the status is set server-side, not chosen
+// on the enrolment form. It only becomes editable afterwards (updateStudentSchema).
+export const enrolStudentSchema = studentFields.omit({ enrolmentStatus: true });
+
+export const updateStudentSchema = studentFields.pick({
   fullName: true,
   email: true,
   academicYear: true,

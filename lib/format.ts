@@ -1,6 +1,6 @@
-const gbp = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "GBP",
+const bdt = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
 const dateFmt = new Intl.DateTimeFormat("en-GB", {
@@ -18,7 +18,8 @@ const dateTimeFmt = new Intl.DateTimeFormat("en-GB", {
 });
 
 export function formatMoney(amount: number): string {
-  return gbp.format(amount);
+  const sign = amount < 0 ? "-" : "";
+  return `${sign}৳${bdt.format(Math.abs(amount))}`;
 }
 
 export function formatDate(value: Date | string | number): string {

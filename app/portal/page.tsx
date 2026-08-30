@@ -78,13 +78,17 @@ export default async function PortalPage() {
       )
     : null;
 
-  // Assessments the student can submit against. We load every assessment plus
-  // only this student's own submissions, then derive on-time/late per row — no
-  // other student's work is ever queried, so the portal can't leak it.
+  // Assessments the student can submit against — only those set for the
+  // student's own programme. We load only this student's own submissions, then
+  // derive on-time/late per row; no other student's work is ever queried, so the
+  // portal can't leak it.
   const now = new Date();
   const [assessments, mySubmissions, publishedResults] = student
     ? await Promise.all([
-        prisma.assessment.findMany({ orderBy: { deadline: "asc" } }),
+        prisma.assessment.findMany({
+          where: { programmeId: student.programmeId },
+          orderBy: { deadline: "asc" },
+        }),
         prisma.submission.findMany({
           where: { studentId: student.id },
           select: { id: true, assessmentId: true, submittedAt: true },

@@ -11,6 +11,7 @@ export const assessmentSchema = z.object({
     .trim()
     .min(2, "Module must be at least 2 characters")
     .max(100, "Module must be at most 100 characters"),
+  programmeId: z.string().min(1, "Select a programme"),
   // Deadlines are intentionally unconstrained in time: a Registrar may record an
   // assessment whose deadline has already passed (late submissions are still
   // accepted, just flagged), so we don't force a future date here.

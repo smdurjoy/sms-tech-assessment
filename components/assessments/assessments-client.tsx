@@ -40,6 +40,8 @@ export type AssessmentRow = {
   id: string;
   title: string;
   module: string;
+  programmeId: string;
+  programmeName: string;
   deadline: string; // ISO, for prefilling the edit form
   deadlineLabel: string; // formatted on the server to avoid hydration drift
   isOpen: boolean;
@@ -48,8 +50,10 @@ export type AssessmentRow = {
 
 export function AssessmentsClient({
   assessments,
+  programmes,
 }: {
   assessments: AssessmentRow[];
+  programmes: { id: string; code: string; name: string }[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -64,6 +68,7 @@ export function AssessmentsClient({
       id: row.id,
       title: row.title,
       module: row.module,
+      programmeId: row.programmeId,
       deadline: row.deadline,
     });
     setEditOpen(true);
@@ -100,6 +105,7 @@ export function AssessmentsClient({
             <TableRow>
               <TableHead>Title</TableHead>
               <TableHead>Module</TableHead>
+              <TableHead>Programme</TableHead>
               <TableHead>Deadline</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Submissions</TableHead>
@@ -110,7 +116,7 @@ export function AssessmentsClient({
             {assessments.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No assessments yet. Create one for students to submit against.
@@ -129,6 +135,9 @@ export function AssessmentsClient({
                   </TableCell>
                   <TableCell className="font-mono text-muted-foreground">
                     {row.module}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {row.programmeName}
                   </TableCell>
                   <TableCell>{row.deadlineLabel}</TableCell>
                   <TableCell>
@@ -173,11 +182,16 @@ export function AssessmentsClient({
         </Table>
       </div>
 
-      <AssessmentFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <AssessmentFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        programmes={programmes}
+      />
       <AssessmentFormDialog
         open={editOpen}
         onOpenChange={setEditOpen}
         assessment={editing ?? undefined}
+        programmes={programmes}
       />
 
       <Dialog

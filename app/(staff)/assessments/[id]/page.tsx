@@ -36,6 +36,7 @@ export default async function AssessmentDetailPage({
   const assessment = await prisma.assessment.findUnique({
     where: { id: params.id },
     include: {
+      programme: { select: { name: true, code: true } },
       submissions: {
         orderBy: { submittedAt: "asc" },
         include: {
@@ -50,11 +51,15 @@ export default async function AssessmentDetailPage({
 
   if (!assessment) notFound();
 
-  // Marksheet roster: every non-withdrawn student. Assessments aren't
-  // cohort-scoped, so staff grade the active cohort and can record a mark for a
-  // non-submitter too. Withdrawn students have left the register and are omitted.
+  // Marksheet roster: every non-withdrawn student *on this assessment's
+  // programme*. Assessments are programme-scoped, so staff grade that cohort and
+  // can record a mark for a non-submitter too. Withdrawn students have left the
+  // register and are omitted.
   const roster = await prisma.student.findMany({
-    where: { enrolmentStatus: { not: "WITHDRAWN" } },
+    where: {
+      programmeId: assessment.programmeId,
+      enrolmentStatus: { not: "WITHDRAWN" },
+    },
     orderBy: { fullName: "asc" },
     select: { id: true, fullName: true, studentId: true },
   });
@@ -103,7 +108,8 @@ export default async function AssessmentDetailPage({
           <AssessmentStatusBadge open={open} />
         </div>
         <p className="text-sm text-muted-foreground">
-          <span className="font-mono">{assessment.module}</span> · deadline{" "}
+          <span className="font-mono">{assessment.module}</span> ·{" "}
+          {assessment.programme.name} · deadline{" "}
           {formatDateTime(assessment.deadline)}
         </p>
       </div>

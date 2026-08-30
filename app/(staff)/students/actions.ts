@@ -63,7 +63,7 @@ export async function enrolStudent(formData: FormData): Promise<ActionResult> {
             dateOfBirth: data.dateOfBirth,
             programmeId: data.programmeId,
             academicYear: data.academicYear,
-            enrolmentStatus: data.enrolmentStatus,
+            enrolmentStatus: "ENROLLED", // new students always start Enrolled
             feeAmount: programme.feeAmount, // total snapshot (= Σ installments)
             installments: {
               create: schedule.map((s) => ({

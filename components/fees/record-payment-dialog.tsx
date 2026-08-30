@@ -151,7 +151,7 @@ export function RecordPaymentControl({
             </div>
 
             <div className="grid gap-1.5">
-              <Label htmlFor="amount">Amount (£)</Label>
+              <Label htmlFor="amount">Amount (৳)</Label>
               <Input
                 id="amount"
                 type="number"

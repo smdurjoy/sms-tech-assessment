@@ -41,10 +41,21 @@ export async function submitAssessment(
 
   const assessment = await prisma.assessment.findUnique({
     where: { id: assessmentId },
-    select: { id: true, deadline: true },
+    select: { id: true, deadline: true, programmeId: true },
   });
   if (!assessment) {
     return { ok: false, formError: "This assessment no longer exists." };
+  }
+
+  // A student may only submit to assessments set for their own programme. This
+  // is enforced here on the server — the portal also hides out-of-programme
+  // assessments, but the check can't rely on the UI having filtered them.
+  const student = await prisma.student.findUnique({
+    where: { id: studentId },
+    select: { programmeId: true },
+  });
+  if (!student || student.programmeId !== assessment.programmeId) {
+    return { ok: false, formError: "This assessment isn't part of your programme." };
   }
 
   const existing = await prisma.submission.findUnique({

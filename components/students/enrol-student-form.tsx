@@ -6,7 +6,6 @@ import Link from "next/link";
 import { toast } from "sonner";
 
 import { enrolStudent } from "@/app/(staff)/students/actions";
-import { ENROLMENT_STATUS_OPTIONS } from "@/lib/validation/student";
 import { buildFeeSchedule } from "@/lib/services/fee-schedule";
 import { formatMoney } from "@/lib/format";
 import type { FieldErrors } from "@/lib/action-result";
@@ -48,7 +47,6 @@ export function EnrolStudentForm({
   const [errors, setErrors] = useState<FieldErrors>({});
 
   const [programmeId, setProgrammeId] = useState("");
-  const [status, setStatus] = useState("ENROLLED");
 
   const selectedProgramme = programmes.find((p) => p.id === programmeId);
   const splitHint = selectedProgramme
@@ -73,7 +71,6 @@ export function EnrolStudentForm({
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     formData.set("programmeId", programmeId);
-    formData.set("enrolmentStatus", status);
 
     startTransition(async () => {
       const result = await enrolStudent(formData);
@@ -147,22 +144,6 @@ export function EnrolStudentForm({
               won&apos;t re-bill this student.
             </p>
           ) : null}
-        </div>
-
-        <div className="grid gap-1.5">
-          <Label htmlFor="enrolmentStatus">Enrolment status</Label>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger id="enrolmentStatus" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ENROLMENT_STATUS_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="grid gap-1.5">

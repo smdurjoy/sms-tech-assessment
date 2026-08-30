@@ -21,11 +21,19 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type AssessmentFormValues = {
   id: string;
   title: string;
   module: string;
+  programmeId: string;
   deadline: string; // ISO string
 };
 
@@ -46,10 +54,12 @@ export function AssessmentFormDialog({
   open,
   onOpenChange,
   assessment,
+  programmes,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   assessment?: AssessmentFormValues;
+  programmes: { id: string; code: string; name: string }[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -57,6 +67,7 @@ export function AssessmentFormDialog({
 
   const [title, setTitle] = useState("");
   const [module, setModule] = useState("");
+  const [programmeId, setProgrammeId] = useState("");
   const [deadline, setDeadline] = useState("");
 
   const isEdit = Boolean(assessment);
@@ -65,6 +76,7 @@ export function AssessmentFormDialog({
     if (open) {
       setTitle(assessment?.title ?? "");
       setModule(assessment?.module ?? "");
+      setProgrammeId(assessment?.programmeId ?? "");
       setDeadline(
         assessment ? toDateTimeInputValue(assessment.deadline) : defaultDeadline()
       );
@@ -77,6 +89,7 @@ export function AssessmentFormDialog({
     const formData = new FormData();
     formData.set("title", title);
     formData.set("module", module);
+    formData.set("programmeId", programmeId);
     formData.set("deadline", deadline);
 
     startTransition(async () => {
@@ -133,6 +146,31 @@ export function AssessmentFormDialog({
               aria-invalid={Boolean(errors.module)}
             />
             <FieldError message={errors.module} />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="programme">Programme</Label>
+            <Select value={programmeId} onValueChange={setProgrammeId}>
+              <SelectTrigger
+                id="programme"
+                className="w-full"
+                aria-invalid={Boolean(errors.programmeId)}
+              >
+                <SelectValue placeholder="Select a programme" />
+              </SelectTrigger>
+              <SelectContent>
+                {programmes.map((programme) => (
+                  <SelectItem key={programme.id} value={programme.id}>
+                    {programme.code} — {programme.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FieldError message={errors.programmeId} />
+            <p className="text-xs text-muted-foreground">
+              Only students on this programme can see and submit to the
+              assessment.
+            </p>
           </div>
 
           <div className="grid gap-1.5">

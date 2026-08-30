@@ -122,7 +122,7 @@ async function main() {
 
   // 1. Fully paid, completed — a settled historical account. Every semester is
   //    in the past and paid in full, so nothing outstanding, nothing overdue.
-  await enrol({
+  const ada = await enrol({
     studentId: formatStudentId(2024, 1),
     fullName: "Ada Lovelace",
     email: "ada.lovelace@example.ac.uk",
@@ -140,7 +140,7 @@ async function main() {
 
   // 2. Overdue — paid the first semester then fell behind. Two past-due
   //    semesters remain unpaid, so this student is flagged on the dashboard.
-  await enrol({
+  const alan = await enrol({
     studentId: formatStudentId(2025, 1),
     fullName: "Alan Turing",
     email: "alan.turing@example.ac.uk",
@@ -154,7 +154,7 @@ async function main() {
 
   // 3. Overdue with nothing paid — deferred, but the fee still stands. Three
   //    past-due semesters; a second entry on the dashboard's attention list.
-  await enrol({
+  const dorothy = await enrol({
     studentId: formatStudentId(2025, 2),
     fullName: "Dorothy Vaughan",
     email: "dorothy.vaughan@example.ac.uk",
@@ -168,7 +168,7 @@ async function main() {
 
   // 4. Partially paid but current — the only past-due semester is settled; the
   //    rest fall due later, so there's a balance but no overdue flag.
-  await enrol({
+  const grace = await enrol({
     studentId: formatStudentId(2026, 1),
     fullName: "Grace Hopper",
     email: "grace.hopper@example.ac.uk",
@@ -182,7 +182,7 @@ async function main() {
 
   // 5. In credit — overpaid the first (not-yet-due) semester, leaving that
   //    semester in credit. Nets the total down but flags nothing overdue.
-  await enrol({
+  const katherine = await enrol({
     studentId: formatStudentId(2026, 2),
     fullName: "Katherine Johnson",
     email: "katherine.johnson@example.ac.uk",
@@ -196,7 +196,7 @@ async function main() {
 
   // 6. Newly enrolled, nothing paid — every semester is still in the future, so
   //    the student is *not* flagged overdue despite carrying the full balance.
-  await enrol({
+  const margaret = await enrol({
     studentId: formatStudentId(2026, 3),
     fullName: "Margaret Hamilton",
     email: "margaret.hamilton@example.ac.uk",
@@ -218,15 +218,79 @@ async function main() {
     ],
   });
 
-  const [students, programmes, installments, payments] = await Promise.all([
-    prisma.student.count(),
-    prisma.programme.count(),
-    prisma.feeInstallment.count(),
-    prisma.payment.count(),
-  ]);
+  // Assessments are programme-scoped: each belongs to one programme, and only
+  // students on that programme can see or submit to it. A mix of past-deadline
+  // (closed) and future (open) assessments per programme exercises the open/late
+  // states in the UI.
+  const registrar = "Registry Office";
+
+  const csCoursework = await prisma.assessment.create({
+    data: {
+      title: "Coursework 1 — Data Structures",
+      module: "CS201",
+      programmeId: bscCs.id,
+      deadline: monthsFromNow(-2),
+      createdBy: registrar,
+    },
+  });
+  await prisma.assessment.create({
+    data: {
+      title: "Coursework 2 — Algorithms",
+      module: "CS305",
+      programmeId: bscCs.id,
+      deadline: monthsFromNow(1),
+      createdBy: registrar,
+    },
+  });
+
+  const dsProposal = await prisma.assessment.create({
+    data: {
+      title: "Project Proposal",
+      module: "DS500",
+      programmeId: mscDs.id,
+      deadline: monthsFromNow(-1),
+      createdBy: registrar,
+    },
+  });
+  await prisma.assessment.create({
+    data: {
+      title: "Data Ethics Essay",
+      module: "DS520",
+      programmeId: mscDs.id,
+      deadline: monthsFromNow(2),
+      createdBy: registrar,
+    },
+  });
+
+  // Sample grades on the closed assessments only — spanning every classification
+  // boundary (39 Fail, 40 Pass, 60 Merit, 70 Distinction) with a mix of published
+  // and withheld results, so the marksheet and the student-facing confidentiality
+  // rule are both demonstrable. Every grade is for a student on the assessment's
+  // own programme.
+  await prisma.result.createMany({
+    data: [
+      { assessmentId: csCoursework.id, studentId: ada.id, grade: 70, published: true, publishedAt: now, gradedBy: registrar },
+      { assessmentId: csCoursework.id, studentId: alan.id, grade: 60, published: true, publishedAt: now, gradedBy: registrar },
+      { assessmentId: csCoursework.id, studentId: dorothy.id, grade: 39, published: true, publishedAt: now, gradedBy: registrar },
+      { assessmentId: csCoursework.id, studentId: margaret.id, grade: 40, published: false, gradedBy: registrar },
+      { assessmentId: dsProposal.id, studentId: grace.id, grade: 68, published: true, publishedAt: now, gradedBy: registrar },
+      { assessmentId: dsProposal.id, studentId: katherine.id, grade: 55, published: false, gradedBy: registrar },
+    ],
+  });
+
+  const [students, programmes, installments, payments, assessments, results] =
+    await Promise.all([
+      prisma.student.count(),
+      prisma.programme.count(),
+      prisma.feeInstallment.count(),
+      prisma.payment.count(),
+      prisma.assessment.count(),
+      prisma.result.count(),
+    ]);
   console.log(
     `Seeded ${programmes} programmes, ${students} students, ` +
-      `${installments} installments, ${payments} payments.`
+      `${installments} installments, ${payments} payments, ` +
+      `${assessments} assessments, ${results} results.`
   );
 }
 
