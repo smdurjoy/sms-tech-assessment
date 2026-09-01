@@ -19,6 +19,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -44,6 +52,10 @@ export type MarksheetRow = {
   result: { grade: number; published: boolean } | null;
 };
 
+type Confirm =
+  | { scope: "single"; studentId: string; studentName: string; publish: boolean }
+  | { scope: "all"; count: number; publish: boolean };
+
 export function Marksheet({
   assessmentId,
   rows,
@@ -53,6 +65,7 @@ export function Marksheet({
 }) {
   const router = useRouter();
   const [target, setTarget] = useState<GradeTarget | null>(null);
+  const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [pending, startTransition] = useTransition();
 
   const gradedCount = rows.filter((r) => r.result).length;
@@ -69,29 +82,29 @@ export function Marksheet({
     });
   }
 
-  function runPublish(studentId: string, published: boolean) {
+  function runConfirmed() {
+    if (!confirm) return;
     startTransition(async () => {
-      const result = await setResultPublished(
-        assessmentId,
-        studentId,
-        published
-      );
-      if (result.ok) {
-        toast.success(published ? "Result published" : "Result withheld");
-        router.refresh();
-      } else if (result.formError) {
-        toast.error(result.formError);
-      }
-    });
-  }
+      const result =
+        confirm.scope === "single"
+          ? await setResultPublished(
+              assessmentId,
+              confirm.studentId,
+              confirm.publish
+            )
+          : await publishAllResults(assessmentId, confirm.publish);
 
-  function runPublishAll(published: boolean) {
-    startTransition(async () => {
-      const result = await publishAllResults(assessmentId, published);
       if (result.ok) {
         toast.success(
-          published ? "All results published" : "All results withheld"
+          confirm.scope === "single"
+            ? confirm.publish
+              ? "Result published"
+              : "Result withheld"
+            : confirm.publish
+              ? "All results published"
+              : "All results withheld"
         );
+        setConfirm(null);
         router.refresh();
       } else if (result.formError) {
         toast.error(result.formError);
@@ -113,7 +126,13 @@ export function Marksheet({
             <Button
               size="sm"
               variant={allPublished ? "outline" : "default"}
-              onClick={() => runPublishAll(!allPublished)}
+              onClick={() =>
+                setConfirm({
+                  scope: "all",
+                  count: allPublished ? publishedCount : gradedCount,
+                  publish: !allPublished,
+                })
+              }
               disabled={pending}
             >
               {allPublished ? "Withhold all" : "Publish all graded"}
@@ -194,7 +213,12 @@ export function Marksheet({
                               size="sm"
                               variant={res.published ? "ghost" : "secondary"}
                               onClick={() =>
-                                runPublish(row.studentId, !res.published)
+                                setConfirm({
+                                  scope: "single",
+                                  studentId: row.studentId,
+                                  studentName: row.fullName,
+                                  publish: !res.published,
+                                })
                               }
                               disabled={pending}
                             >
@@ -217,6 +241,62 @@ export function Marksheet({
         onOpenChange={(open) => !open && setTarget(null)}
         target={target}
       />
+
+      <Dialog
+        open={Boolean(confirm)}
+        onOpenChange={(open) => {
+          if (!open && !pending) setConfirm(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirm?.publish
+                ? confirm.scope === "all"
+                  ? "Publish all graded results?"
+                  : "Publish this result?"
+                : confirm?.scope === "all"
+                  ? "Withhold all results?"
+                  : "Withhold this result?"}
+            </DialogTitle>
+            <DialogDescription>
+              {confirm
+                ? confirm.scope === "all"
+                  ? confirm.publish
+                    ? `${confirm.count} student${confirm.count === 1 ? "" : "s"} will see their result on the portal immediately.`
+                    : `${confirm.count} published result${confirm.count === 1 ? "" : "s"} will be hidden from the portal until you publish again.`
+                  : confirm.publish
+                    ? `${confirm.studentName} will see this result on the portal immediately.`
+                    : `${confirm.studentName} will no longer see this result on the portal until you publish again.`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirm(null)}
+              disabled={pending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant={confirm?.publish ? "default" : "destructive"}
+              onClick={runConfirmed}
+              disabled={pending}
+            >
+              {confirm?.publish
+                ? confirm.scope === "all"
+                  ? "Publish all"
+                  : "Publish"
+                : confirm?.scope === "all"
+                  ? "Withhold all"
+                  : "Withhold"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

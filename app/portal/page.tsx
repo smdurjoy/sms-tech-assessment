@@ -101,6 +101,7 @@ export default async function PortalPage() {
           orderBy: { gradedAt: "desc" },
           select: {
             id: true,
+            assessmentId: true,
             grade: true,
             assessment: { select: { title: true, module: true } },
           },
@@ -110,6 +111,12 @@ export default async function PortalPage() {
   const submissionByAssessment = new Map(
     mySubmissions.map((s) => [s.assessmentId, s])
   );
+  // A published grade locks the submission: changing the file after grading
+  // would leave the published mark pointing at different work. Enforced
+  // server-side in submitAssessment; the UI just hides the resubmit action.
+  const publishedAssessmentIds = new Set(
+    publishedResults.map((r) => r.assessmentId)
+  );
   const assessmentRows = assessments.map((a) => {
     const sub = submissionByAssessment.get(a.id);
     return {
@@ -118,6 +125,7 @@ export default async function PortalPage() {
       module: a.module,
       deadlineLabel: formatDateTime(a.deadline),
       pastDeadline: isPastDeadline(a.deadline, now),
+      resultPublished: publishedAssessmentIds.has(a.id),
       submission: sub
         ? {
             id: sub.id,

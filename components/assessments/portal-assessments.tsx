@@ -26,6 +26,7 @@ export type PortalAssessmentRow = {
   module: string;
   deadlineLabel: string;
   pastDeadline: boolean;
+  resultPublished: boolean;
   submission: {
     id: string;
     submittedAtLabel: string;
@@ -104,7 +105,11 @@ export function PortalAssessments({
                           Download
                         </a>
                       </Button>
-                      {row.pastDeadline ? (
+                      {row.resultPublished ? (
+                        <span className="text-xs text-muted-foreground">
+                          Result published
+                        </span>
+                      ) : row.pastDeadline ? (
                         <span className="text-xs text-muted-foreground">
                           Deadline passed
                         </span>
@@ -118,6 +123,10 @@ export function PortalAssessments({
                         </Button>
                       )}
                     </>
+                  ) : row.resultPublished ? (
+                    <span className="text-xs text-muted-foreground">
+                      Result published
+                    </span>
                   ) : (
                     <Button size="sm" onClick={() => openSubmit(row, false)}>
                       {row.pastDeadline ? "Submit late" : "Submit work"}

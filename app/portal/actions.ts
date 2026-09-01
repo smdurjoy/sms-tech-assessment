@@ -58,6 +58,21 @@ export async function submitAssessment(
     return { ok: false, formError: "This assessment isn't part of your programme." };
   }
 
+  // A published grade locks the submission — changing the file after grading
+  // would leave the published mark pointing at different work. Blocks both a
+  // resubmission and any first-time upload made after grading somehow ran.
+  const publishedResult = await prisma.result.findUnique({
+    where: { assessmentId_studentId: { assessmentId, studentId } },
+    select: { published: true },
+  });
+  if (publishedResult?.published) {
+    return {
+      ok: false,
+      formError:
+        "Your result for this assessment has been published — the submission is locked.",
+    };
+  }
+
   const existing = await prisma.submission.findUnique({
     where: { assessmentId_studentId: { assessmentId, studentId } },
     select: { id: true, storagePath: true },

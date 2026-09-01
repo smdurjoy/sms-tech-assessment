@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/students/status-badge";
 import { EditStudentDialog } from "@/components/students/edit-student-dialog";
-import { DeleteStudentControl } from "@/components/students/delete-student-control";
 import { OverdueBadge } from "@/components/fees/fee-display";
 import { FeesTab } from "@/components/fees/fees-tab";
 
@@ -102,10 +101,6 @@ export default async function StudentDetailPage({
               academicYear: student.academicYear,
               enrolmentStatus: student.enrolmentStatus,
             }}
-          />
-          <DeleteStudentControl
-            studentId={student.id}
-            studentName={student.fullName}
           />
         </div>
       </div>

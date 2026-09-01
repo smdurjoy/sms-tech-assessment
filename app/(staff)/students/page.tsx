@@ -16,7 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/students/status-badge";
-import { StudentRowActions } from "@/components/students/student-row-actions";
 import { StudentsToolbar } from "@/components/students/students-toolbar";
 import { ENROLMENT_STATUS_OPTIONS } from "@/lib/validation/student";
 
@@ -143,14 +142,13 @@ export default async function StudentsPage({
               <TableHead>Academic year</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Balance</TableHead>
-              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {students.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={6}
                   className="h-24 text-center text-muted-foreground"
                 >
                   {filtersActive
@@ -186,12 +184,6 @@ export default async function StudentsPage({
                         {summary.anyOverdue ? <OverdueBadge /> : null}
                         <BalanceAmount balance={summary.totalOutstanding} />
                       </span>
-                    </TableCell>
-                    <TableCell>
-                      <StudentRowActions
-                        studentId={student.id}
-                        studentName={student.fullName}
-                      />
                     </TableCell>
                   </TableRow>
                 );
