@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SMS Registry Module — Technical Assessment
 
-## Getting Started
+A high-performance, domain-focused web application covering the four daily core workflows of a University Registry Administrator, built for **PEN Global (PEN Group)**.
 
-First, run the development server:
+Built with **Next.js 14 (App Router)**, **PostgreSQL**, **Prisma ORM**, and **Tailwind CSS / Shadcn UI**.
+
+---
+
+## 🌟 Overview & Product Architecture
+
+This application is designed specifically around how a **Registry Office** operates in higher education. Rather than a generic CRUD system, it models domain-specific workflows, financial ledger integrity, academic progression, and confidentiality boundaries.
+
+### Role Separation
+
+- **Staff View (`/` - Registry Portal)**: Full administrative access to manage student enrolments, programme fees, fee payments, assessment creation, grade entry, and results publication.
+- **Student View (`/portal` - Student Self-Service)**: Tailored student portal allowing students to view their balance & breakdown, submit assignments (PDF/DOCX), and view their **published marksheet only**.
+
+_(A role switcher header component allows seamless toggling between Staff and Student views without complex login overhead)._
+
+---
+
+## ⚙️ Environment Variables
+
+The project uses `.env` for local database configuration. An example template is provided in `.env.example`.
+
+```env
+# Postgres (Docker Compose)
+POSTGRES_USER=sms
+POSTGRES_PASSWORD=change-me
+POSTGRES_DB=sms
+
+# Prisma / App Connection (Local Docker Postgres on port 5434)
+DATABASE_URL="postgresql://sms:change-me@localhost:5434/sms?schema=public"
+```
+
+---
+
+## 🛠️ How to Run Locally
+
+### Prerequisites
+
+- **Node.js**: v18+ or v20+
+- **Docker & Docker Compose** (or a running local PostgreSQL instance)
+- **npm** / **pnpm** / **yarn**
+
+### 1. Clone the repository & Install Dependencies
+
+```bash
+git clone https://github.com/smdurjoy/sms-tech-assessment.git
+cd sms-tech-assessment
+npm install
+```
+
+### 2. Configure Environment Variables
+
+Copy `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
+```
+
+### 3. Start PostgreSQL with Docker
+
+```bash
+docker compose up -d
+```
+
+_(Runs Postgres on port `5434` as configured in `docker-compose.yml` and `DATABASE_URL`)._
+
+### 4. Run Prisma Database Migrations
+
+```bash
+npx prisma migrate dev --name init
+```
+
+### 5. Seed the Database
+
+Seed the database with realistic demo data (6 students across 2 programmes, installment schedules, payments, overdue scenarios, assessments, submissions, and sample graded results):
+
+```bash
+npx prisma db seed
+```
+
+### 6. Start the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🤖 AI Usage & Engineering Ownership
 
-## Learn More
+In alignment with PEN Global’s engineering standards, AI (Claude) was leveraged as an **engineering capability and velocity multiplier** rather than a code-generation shortcut.
 
-To learn more about Next.js, take a look at the following resources:
+### How AI Was Used:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- First I generated CLAUDE.md file based on the requirements for giving context to AI and best results.
+- Then I use AI to setup and configure the project.
+- After that I verify and run the project to ensure project setup is done correctly.
+- Then for each feature I have given the commands to AI and verify each feature, found quite a few issues, fixed them, run verify and finally pushed for each feature.
+- Along with the code generation there were few decisions I had to make regarding the feature, I instructed AI accordingly and ensure the flow works as I planed.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Ownership & Code Quality Guarantee:
 
-## Deploy on Vercel
+- All generated code was line-by-line reviewed, refactored, and tested for TypeScript type safety.
+- Business rules (grade classifications, overdue balance formulas, file upload type validation, server action error handling) were authored and verified explicitly to ensure 100% adherence to requirement specs.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
